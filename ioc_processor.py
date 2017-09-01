@@ -1,5 +1,12 @@
+#!/bin/python
+#
+# IOC processor for manual and automatic sources
+# by Garrett Elkins
+# V 0.9
+# 8/21/17
+#
+
 import csv
-import json
 import urllib2
 import datetime
 import os
@@ -14,38 +21,29 @@ def main():
     
     # Process each source and add the results to the master list
     for item in sources:
-        if len(item) == 3:
-            master_list += pullFromSite(item[0],item[1],bool(item[2]))
-        else:
-            master_list += pullFromSite(item[0],item[1])
+        master_list += pullFromSite(item[0],item[1])
 
     # Process and add the manual list
     master_list += manualProcessor(30)
-
-    # TODO sort through list for redundancy
-    # TODO output to file
 
     if os.path.exists("result.csv"):
         os.remove("result.csv")
 
     master_list = sorted(master_list)
-    #print master_list
 
     final_list = list()
 
-
+    #Create our Regex to strip out all none alpha numerica values and spaces to keep the ingestor happy
     pattern = re.compile('([^\s\w]|_)+')
 
     for val, item in enumerate(master_list):
         if val >= len(master_list) - 1:
-            final_list.append(item)
-            #final_list.append([item[0],pattern.sub('', item[1])])
+            final_list.append([item[0],pattern.sub('', item[1])])
         else:
             nextItem = master_list[val+1]
 
             if item[0] is not nextItem[0]:
-                final_list.append(item)
-                #final_list.append([item[0],pattern.sub('', item[1])])
+                final_list.append([item[0],pattern.sub('', item[1])])
 
     # Write results to the results file
     with open('result.csv', 'wb') as csvfile:
@@ -58,15 +56,10 @@ def main():
 
 
 # Processes give site along with a source label or row address
-def pullFromSite(site, source, isCSV = False):
+def pullFromSite(site, source):
     response = urllib2.urlopen(site)
 
-    if isCSV:
-        data = list(csv.reader(response))
-
-    else:
-        data = response.read()
-        data = json.loads(data)
+    data = list(csv.reader(response))
 
     result_ips = list()
 
