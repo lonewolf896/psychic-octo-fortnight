@@ -2,8 +2,7 @@
 #
 # IOC processor for manual and automatic sources
 # by Garrett Elkins
-# V 0.9
-# 8/21/17
+# V 1.0
 #
 
 import csv
