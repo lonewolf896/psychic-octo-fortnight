@@ -2,7 +2,8 @@
 #
 # IOC processor for manual and automatic sources
 # by Garrett Elkins
-# V 1.0
+# V 0.9
+# 8/21/17
 #
 
 import csv
@@ -34,21 +35,24 @@ def main():
 
     #Create our Regex to strip out all none alpha numerica values and spaces to keep the ingestor happy
     pattern = re.compile('([^\s\w]|_)+')
+    ip_pattern = re.compile('^(?:\d{1,3}\.){3}\d{1,3}$')
 
     for val, item in enumerate(master_list):
         if val >= len(master_list) - 1:
-            final_list.append([item[0],pattern.sub('', item[1])])
+            if bool(ip_pattern.match(item[0])):
+                final_list.append([item[0],pattern.sub('', item[1])])
         else:
             nextItem = master_list[val+1]
 
             if item[0] is not nextItem[0]:
-                final_list.append([item[0],pattern.sub('', item[1])])
+                if bool(ip_pattern.match(item[0])):
+                    final_list.append([item[0],pattern.sub('', item[1])])
 
     # Write results to the results file
     with open('result.csv', 'wb') as csvfile:
         fieldnames = ['ip', 'tag']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
+        #writer.writeheader()
 
         for item in final_list:
             writer.writerow({'ip': item[0], 'tag': item[1]})
@@ -75,10 +79,11 @@ def pullFromSite(site, source):
         for row in data:
             # Checking for comment lines and ignoring them
             if not row[0].startswith("#"):
-                if source.isdigit():
-                    result_ips.append([row[0], row[int(source)]])
-                else:
-                    result_ips.append([row[0], source])
+                if not row[0].startswith("/"):
+                    if source.isdigit():
+                        result_ips.append([row[0], row[int(source)]])
+                    else:
+                        result_ips.append([row[0], source])
 
     return result_ips
 
@@ -90,14 +95,14 @@ def manualProcessor(falloffdays):
     currentData = list()
 
     # opens up saved data if it exists
-    if os.path.exists('./manual_data.csv'):
+    if os.path.exists('manual_data.csv'):
         with open('manual_data.csv') as sources_file:
             oldData = list(csv.reader(sources_file))
     
         current_time = (str(datetime.datetime.now().replace(microsecond=0))).replace(" ", "_")
 
         # backup the old data just in case and time stamp it
-        with open('old/Old_Manual_list_' + current_time + '.csv', "w") as backup:
+        with open('/old/Old_Manual_list_' + current_time + '.csv', "w") as backup:
             filewriter = csv.writer(backup, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
             for infoPiece in oldData:
                 filewriter.writerow(infoPiece)
@@ -161,7 +166,7 @@ def manualProcessor(falloffdays):
                 result_ips.append([item[0],item[1], str(datetime.date.today())])
 
     # Remove old file if it exists
-    if os.path.exists('./manual_data.csv'):
+    if os.path.exists('manual_data.csv'):
         os.remove('manual_data.csv')
 
     if files:
